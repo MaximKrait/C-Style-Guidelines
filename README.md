@@ -1,4 +1,4 @@
-## C++ Style Guidelines
+## C+ Style Guidelines
 
 Follow these formatting and architectural rules to keep the codebase consistent, high-performance, and clean.
 
