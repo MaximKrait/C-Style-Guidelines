@@ -42,7 +42,23 @@ Follow these formatting and architectural rules to keep the codebase consistent,
 
 ---
 
-### 3. Architecture & Data Structures
+### 3. Header Files (.h) Structure
+
+* **Include Guards:** Always use `#pragma once` at the very top of every header file.
+* **Header-Only Utility Functions:** Small, lightweight utilities or bitwise operations defined in headers must be declared as `static inline` to prevent multiple-definition errors during linking.
+    ```cpp
+    static inline void write_le32(std::ostream& out, uint32_t val) { ... }
+    ```
+* **Pure Declarations:** Keep headers clean by declaring only the interfaces (functions, structures, enums). Separate any complex logic into corresponding `.cpp` files.
+* **Grouping:** Group related function declarations together inside the header (e.g., separating UI drawing, clipboard access, and state tracking) and use clear, minimal comments if separating logical sections.
+    ```cpp
+    // (Encoder <-> Decoder)
+    void set_decoder_active(bool active);
+    ```
+
+---
+
+### 4. Architecture & Data Structures
 
 * **Avoid Excessive Getters/Setters:** Use raw `struct` fields or references (`&`) inside context structures to allow direct data manipulation. Encapsulation should only be added if strictly necessary.
     ```cpp
@@ -56,17 +72,22 @@ Follow these formatting and architectural rules to keep the codebase consistent,
         bool& running;
     };
     ```
+* **Naked Pod Structures:** For system-level or memory-mapped components (like Flow-Based Programming runtimes or Arenas), use clean, sequential primitive fields (`uint32_t`, `void*` function pointers) without constructors to keep them predictable PODs.
+    ```cpp
+    struct Component {
+        uint32_t component_type_id;
+        uint32_t instance_id;
+        void (*logic_call)(uint8_t* shared_arena_buffer); 
+    };
+    ```
 * **Data-Driven Logic Over Branches:** Prefer lookup tables (`std::map`, arrays of structs, or LUT arrays) instead of long `if/else` or `switch` chains for handling keys, commands, and translations.
     ```cpp
     std::map<wint_t, std::function<void(AppContext&)>> commands = { ... };
-    
-    struct KeyAction { wint_t key; std::function<void()> action; };
-    KeyAction actions[] = { ... };
     ```
 
 ---
 
-### 4. Memory & Performance
+### 5. Memory & Performance
 
 * **Pre-allocate Vector Capacity:** Always use `.reserve()` when the target size of a `std::vector` or `std::string` can be calculated beforehand. This eliminates unnecessary reallocations during bit-packing or file loading.
     ```cpp
@@ -81,11 +102,11 @@ Follow these formatting and architectural rules to keep the codebase consistent,
         return lut;
     }();
     ```
-* **Pass by Reference:** Heavy objects (`std::string`, `std::wstring`, `AppContext`) must always be passed by reference (`const T&` or `T&`) to avoid deep copies.
+* **Pass by Reference:** Heavy objects (`std::string`, `std::wstring`, structures) must always be passed by reference (`const T&` or `T&`) to avoid deep copies.
 
 ---
 
-### 5. Control Flow & Modern C++
+### 6. Control Flow & Modern C++
 
 * **No Braceless Loops/Conditionals:** Always wrap `if`, `else`, and `for` statements in braces, unless it is a highly specific single-line control phrase like `if (cond) return;`.
 * **Lambda Captures:** Use explicit reference capture `[&]` for local, short-lived scopes (like UI action tables) where the lambda does not outlive the local variables.
